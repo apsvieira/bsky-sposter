@@ -7,14 +7,7 @@ import (
 	"github.com/mmcdole/gofeed"
 )
 
-type BlogPostMessage struct {
-	Title           string
-	Link            string
-	PublishedParsed time.Time
-	Content         string
-}
-
-func FetchNewFromFeed(feedURL string, lastParsed *time.Time) ([]*gofeed.Item, error) {
+func FetchNewItems(feedURL string, lastParsed *time.Time) ([]*gofeed.Item, error) {
 	// Create a new parser
 	fp := gofeed.NewParser()
 
@@ -36,5 +29,4 @@ func FetchNewFromFeed(feedURL string, lastParsed *time.Time) ([]*gofeed.Item, er
 	}
 
 	return filtered, nil
-
 }

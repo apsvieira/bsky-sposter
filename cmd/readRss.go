@@ -9,7 +9,7 @@ import (
 
 func main() {
 	minDate := time.Date(2025, time.February, 1, 0, 0, 0, 0, time.UTC)
-	posts, err := sposter.FetchNewFromFeed("https://apsv.bearblog.dev/feed/", &minDate)
+	posts, err := sposter.FetchNewItems("https://apsv.bearblog.dev/feed/", &minDate)
 
 	if err != nil {
 		log.Panicf("Error fetching feed: %s", err)
@@ -17,9 +17,17 @@ func main() {
 
 	log.Printf("Found %d new posts", len(posts))
 	for _, post := range posts {
-		log.Printf("Title: %s", post.Title)
-		log.Printf("Link: %s", post.Link)
-		log.Printf("Published: %s", post.Published)
-		log.Printf("Updated: %s", post.Updated)
+		p, err := sposter.NewPostFromFeedItem(post)
+		if err != nil {
+			log.Printf("Error creating post: %s", err)
+			continue
+		}
+
+		msg, err := p.BskyPost()
+		if err != nil {
+			log.Printf("Error creating message: %s", err)
+			continue
+		}
+		log.Printf("Post: %s", msg)
 	}
 }
