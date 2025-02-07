@@ -1,0 +1,21 @@
+{
+  "name": "bluesky-rss-bot",
+  "version": "1.0.0",
+  "description": "A bot to post RSS feed updates to BlueSky",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build && node dist/index.js",
+    "clean": "rm -rf dist && rm -rf ./ts-out/"
+  },
+  "dependencies": {
+    "@atproto/api": "^0.13.33",
+    "dotenv": "^16.4.7",
+    "rss-parser": "^3.13.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}
