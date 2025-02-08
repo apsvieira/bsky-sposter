@@ -14,8 +14,8 @@ func main() {
 		log.Fatalf("Error getting credentials: %s", err)
 	}
 
-	client := bsky.NewClient("https://bsky.social", creds)
-	if err := client.Authenticate(ctx); err != nil {
+	client, err := bsky.NewClient(ctx, "https://bsky.social", creds)
+	if err != nil {
 		log.Fatalf("Error authenticating: %s", err)
 	}
 	log.Printf("Authenticated as %s", creds.Handle)

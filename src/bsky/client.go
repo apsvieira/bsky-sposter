@@ -13,11 +13,15 @@ type Client struct {
 	creds      *Credentials
 }
 
-func NewClient(service string, creds *Credentials) *Client {
+func NewClient(ctx context.Context, service string, creds *Credentials) (*Client, error) {
 	xrpcClient := &xrpc.Client{
 		Host: service,
 	}
-	return &Client{XrpcClient: xrpcClient, creds: creds}
+	client := &Client{XrpcClient: xrpcClient, creds: creds}
+	if err := client.Authenticate(ctx); err != nil {
+		return nil, fmt.Errorf("NewClient: %w", err)
+	}
+	return client, nil
 }
 
 // Authenticate creates a new session and authenticates with the handle and appkey.
@@ -32,7 +36,7 @@ func (c *Client) Authenticate(ctx context.Context) error {
 		return fmt.Errorf("Authenticate: %w", err)
 	}
 	if !*session.Active {
-		return fmt.Errorf("Authenticate: session not active: %v", *session.Status)
+		return fmt.Errorf("Authenticate: user not active: %v", *session.Status)
 	}
 
 	c.XrpcClient.Auth = &xrpc.AuthInfo{
@@ -44,6 +48,7 @@ func (c *Client) Authenticate(ctx context.Context) error {
 	return nil
 }
 
+// RefreshSession refreshes the current session, creating a new access token.
 func (c *Client) RefreshSession(ctx context.Context) error {
 	if c.XrpcClient.Auth == nil || c.XrpcClient.Auth.RefreshJwt == "" {
 		return fmt.Errorf("RefreshSession: no session to refresh")
@@ -54,7 +59,7 @@ func (c *Client) RefreshSession(ctx context.Context) error {
 		return fmt.Errorf("RefreshSession: %w", err)
 	}
 	if !*session.Active {
-		return fmt.Errorf("RefreshSession: session not active: %v", *session.Status)
+		return fmt.Errorf("RefreshSession: user not active: %v", *session.Status)
 	}
 
 	c.XrpcClient.Auth = &xrpc.AuthInfo{
