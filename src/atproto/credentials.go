@@ -1,4 +1,4 @@
-package bsky
+package atproto
 
 import (
 	"fmt"
