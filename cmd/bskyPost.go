@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"log"
+	"time"
 
 	atproto "github.com/apsvieira/bsky-sposter/src/atproto"
 	"github.com/apsvieira/bsky-sposter/src/richtext"
+	"github.com/bluesky-social/indigo/api/bsky"
 )
 
 func main() {
@@ -26,7 +28,17 @@ func main() {
 	if err := rt.DetectFacets(ctx, client); err != nil {
 		log.Fatalf("Error detecting facets: %s", err)
 	}
-	log.Printf("Detected facets: %s", rt.Facets[0].Features[0].RichtextFacet_Mention.Did)
-	log.Printf("Detected facets: %s", rt.Facets[1].Features[0].RichtextFacet_Link.Uri)
-	log.Printf("Detected facets: %s", rt.Facets[2].Features[0].RichtextFacet_Link.Uri)
+
+	// Post the RichText to the feed
+	post := &bsky.FeedPost{
+		CreatedAt: time.Now().UTC().Format(time.RFC3339),
+		Text:      rt.Text(),
+		Facets:    rt.Facets(),
+	}
+
+	response, err := client.App.Bsky.Feed.Post.Create(ctx, post)
+	if err != nil {
+		log.Fatalf("Error posting: %s", err)
+	}
+	log.Printf("Posted: %s", response.Uri)
 }

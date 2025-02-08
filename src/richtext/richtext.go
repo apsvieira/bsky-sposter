@@ -59,7 +59,7 @@ func (s *RichTextSegment) Tag() *bsky.RichtextFacet_Tag {
 
 type RichText struct {
 	unicodeText string
-	Facets      []*bsky.RichtextFacet
+	facets      []*bsky.RichtextFacet
 }
 
 type ByIndexByteStart []*bsky.RichtextFacet
@@ -90,7 +90,11 @@ func NewRichTextFromProps(props RichTextProps, opts *RichTextOpts) *RichText {
 		text = sanitizeText(text, opts)
 	}
 
-	return &RichText{unicodeText: text, Facets: facets}
+	return &RichText{unicodeText: text, facets: facets}
+}
+
+func (rt *RichText) Facets() []*bsky.RichtextFacet {
+	return rt.facets
 }
 
 func (rt *RichText) Text() string {
@@ -108,8 +112,8 @@ func (rt *RichText) GraphemeLength() int {
 
 // Segments returns the text segments with their respective facets
 func (rt *RichText) Segments() []*RichTextSegment {
-	segments := make([]*RichTextSegment, 0, len(rt.Facets))
-	for _, f := range rt.Facets {
+	segments := make([]*RichTextSegment, 0, len(rt.facets))
+	for _, f := range rt.facets {
 		text := rt.unicodeText[f.Index.ByteStart:f.Index.ByteEnd]
 		segments = append(segments, NewRichTextSegment(text, f))
 	}
@@ -138,126 +142,6 @@ func (rt *RichText) DetectFacets(ctx context.Context, agent *atproto.Client) err
 			feature.RichtextFacet_Mention.Did = data.Did
 		}
 	}
-	rt.Facets = facets
+	rt.facets = facets
 	return nil
-}
-
-func detectFacets(text string) []*bsky.RichtextFacet {
-	var facets []*bsky.RichtextFacet
-
-	// mentions
-	for _, match := range mentionRegex.FindAllStringIndex(text, -1) {
-		matchText := text[match[0]:match[1]]
-		// this is a bit fancier in the original code
-		start := strings.Index(matchText, "@") + 1
-		mention := matchText[start:]
-		if !isValidDomain(mention) && !strings.HasSuffix(mention, ".test") {
-			continue
-		}
-
-		facet := &bsky.RichtextFacet{
-			Index: &bsky.RichtextFacet_ByteSlice{
-				ByteStart: int64(start),
-				ByteEnd:   int64(match[1]),
-			},
-			Features: []*bsky.RichtextFacet_Features_Elem{
-				{
-					RichtextFacet_Mention: &bsky.RichtextFacet_Mention{
-						Did: mention,
-					},
-				},
-			},
-		}
-		facets = append(facets, facet)
-	}
-
-	// links
-	for _, match := range urlRegex.FindAllStringIndex(text, -1) {
-		uri := text[match[0]:match[1]]
-		uri = strings.TrimSpace(uri)
-		if !strings.HasPrefix(uri, "http") {
-			if !isValidDomain(uri) {
-				continue
-			}
-			uri = "https://" + uri
-		}
-		if trailingPunctuationRegex.MatchString(uri) {
-			uri = uri[:len(uri)-1]
-		}
-		if strings.HasSuffix(uri, ")") && !strings.Contains(uri, "(") {
-			uri = uri[:len(uri)-1]
-		}
-
-		facet := &bsky.RichtextFacet{
-			Index: &bsky.RichtextFacet_ByteSlice{
-				ByteStart: int64(match[0]),
-				ByteEnd:   int64(match[0] + len(uri) - 1), // TODO: check
-			},
-			Features: []*bsky.RichtextFacet_Features_Elem{
-				{
-					RichtextFacet_Link: &bsky.RichtextFacet_Link{
-						Uri: uri,
-					},
-				},
-			},
-		}
-		facets = append(facets, facet)
-	}
-
-	// TODO: not handling tags as they depend on boring regexes
-	// that I can't be bothered to translate to Go
-	//
-	// for _, match := range tagRegex.FindAllStringIndex(text, -1) {
-	// 	tag := text[match[0]:match[1]]
-	// 	tag = strings.TrimSpace(tag)
-	// 	tag = trailingPunctuationRegex.ReplaceAllString(tag, "")
-
-	// 	if len(tag) == 0 || len(tag) > 100 {
-	// 		continue
-	// 	}
-
-	// 	facet := &bsky.RichtextFacet{
-	// 		Index: &bsky.RichtextFacet_ByteSlice{
-	// 			ByteStart: int64(match[0]),
-	// 			ByteEnd:   int64(match[0] + len(tag) - 1), // TODO: check
-	// 		},
-	// 		Features: []*bsky.RichtextFacet_Features_Elem{
-	// 			{
-	// 				RichtextFacet_Tag: &bsky.RichtextFacet_Tag{
-	// 					Tag: tag,
-	// 				},
-	// 			},
-	// 		},
-	// 	}
-	// 	facets = append(facets, facet)
-	// }
-
-	return facets
-}
-
-func isValidDomain(str string) bool {
-	etld, im := publicsuffix.PublicSuffix(str)
-	var validtld = false
-	if im { // ICANN managed
-		validtld = true
-	} else if strings.IndexByte(etld, '.') >= 0 { // privately managed
-		validtld = true
-	}
-	return validtld
-}
-
-var (
-	EXCESS_SPACE_RE = regexp.MustCompile(`[\r\n]([\s]*[\r\n]){2,}`) // Not handling \u00AD\u2060\u200D\u200C\u200B
-	REPLACEMENT_STR = "\n\n"
-)
-
-func sanitizeText(text string, opts *RichTextOpts) string {
-	if opts.cleanNewLines {
-		text = clean(text, EXCESS_SPACE_RE, REPLACEMENT_STR)
-	}
-	return text
-}
-
-func clean(text string, re *regexp.Regexp, replacement string) string {
-	return re.ReplaceAllString(text, replacement)
 }

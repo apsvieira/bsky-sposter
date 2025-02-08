@@ -12,13 +12,20 @@ type Client struct {
 	client *xrpc.Client
 	creds  *Credentials
 	Com    *ComNS
+	App    *AppNS
 }
 
 func NewClient(ctx context.Context, service string, creds *Credentials) (*Client, error) {
 	xrpcClient := &xrpc.Client{
 		Host: service,
 	}
-	client := &Client{client: xrpcClient, creds: creds, Com: NewComNS(xrpcClient)}
+	client := &Client{
+		client: xrpcClient,
+		creds:  creds,
+		Com:    NewComNS(xrpcClient),
+		App:    NewAppNS(xrpcClient),
+	}
+
 	if err := client.Authenticate(ctx); err != nil {
 		return nil, fmt.Errorf("NewClient: %w", err)
 	}
@@ -32,42 +39,9 @@ func (c *Client) Authenticate(ctx context.Context) error {
 		Password:   c.creds.AppKey,
 	}
 
-	session, err := atproto.ServerCreateSession(ctx, c.client, creds)
+	err := c.Com.Atproto.Server.CreateSession(ctx, creds)
 	if err != nil {
 		return fmt.Errorf("Authenticate: %w", err)
-	}
-	if !*session.Active {
-		return fmt.Errorf("Authenticate: user not active: %v", *session.Status)
-	}
-
-	c.client.Auth = &xrpc.AuthInfo{
-		Did:        session.Did,
-		Handle:     session.Handle,
-		AccessJwt:  session.AccessJwt,
-		RefreshJwt: session.RefreshJwt,
-	}
-	return nil
-}
-
-// RefreshSession refreshes the current session, creating a new access token.
-func (c *Client) RefreshSession(ctx context.Context) error {
-	if c.client.Auth == nil || c.client.Auth.RefreshJwt == "" {
-		return fmt.Errorf("RefreshSession: no session to refresh")
-	}
-
-	session, err := atproto.ServerRefreshSession(ctx, c.client)
-	if err != nil {
-		return fmt.Errorf("RefreshSession: %w", err)
-	}
-	if !*session.Active {
-		return fmt.Errorf("RefreshSession: user not active: %v", *session.Status)
-	}
-
-	c.client.Auth = &xrpc.AuthInfo{
-		Did:        session.Did,
-		Handle:     session.Handle,
-		AccessJwt:  session.AccessJwt,
-		RefreshJwt: session.RefreshJwt,
 	}
 	return nil
 }
@@ -89,7 +63,7 @@ type ComAtprotoNS struct {
 	// Lexicon *ComAtprotoLexiconNS
 	// Moderation *ComAtprotoModerationNS
 	// Repo *ComAtprotoRepoNS
-	// Server *ComAtprotoServerNS
+	Server *ComAtprotoServerNS
 	// Sync *ComAtprotoSyncNS
 	// Temp *ComAtprotoTempNS
 }
@@ -98,5 +72,6 @@ func NewComAtprotoNS(client *xrpc.Client) *ComAtprotoNS {
 	return &ComAtprotoNS{
 		client:   client,
 		Identity: NewComAtprotoIdentityNS(client),
+		Server:   NewComAtprotoServerNS(client),
 	}
 }
