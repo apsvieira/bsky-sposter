@@ -7,11 +7,10 @@ import (
 	"github.com/mmcdole/gofeed"
 )
 
+// FetchNewItems gets items from an Atom, RSS or JSON feed published after a given date.
 func FetchNewItems(feedURL string, lastParsed *time.Time) ([]*gofeed.Item, error) {
-	// Create a new parser
 	fp := gofeed.NewParser()
 
-	// Parse the feed
 	feed, err := fp.ParseURL(feedURL)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching feed: %v", err)
