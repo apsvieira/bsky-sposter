@@ -3,13 +3,10 @@ package richtext
 import (
 	"context"
 	"log"
-	"regexp"
 	"sort"
-	"strings"
 
 	"github.com/apsvieira/bsky-sposter/src/atproto"
 	"github.com/bluesky-social/indigo/api/bsky"
-	"golang.org/x/net/publicsuffix"
 )
 
 type RichTextProps struct {

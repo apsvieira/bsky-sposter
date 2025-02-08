@@ -3,11 +3,9 @@ package main
 import (
 	"context"
 	"log"
-	"time"
 
+	sposter "github.com/apsvieira/bsky-sposter/src"
 	atproto "github.com/apsvieira/bsky-sposter/src/atproto"
-	"github.com/apsvieira/bsky-sposter/src/richtext"
-	"github.com/bluesky-social/indigo/api/bsky"
 )
 
 func main() {
@@ -23,17 +21,9 @@ func main() {
 	}
 	log.Printf("Authenticated as %s", creds.Handle)
 
-	// Create a new RichText instance
-	rt := richtext.NewRichText("Hello, @apsv.bsky.social! #bsky https://bsky.social! google.com ")
-	if err := rt.DetectFacets(ctx, client); err != nil {
-		log.Fatalf("Error detecting facets: %s", err)
-	}
-
-	// Post the RichText to the feed
-	post := &bsky.FeedPost{
-		CreatedAt: time.Now().UTC().Format(time.RFC3339),
-		Text:      rt.Text(),
-		Facets:    rt.Facets(),
+	post, err := sposter.NewPost(ctx, client, "Hello, @apsv.bsky.social! #bsky https://bsky.social! google.com ")
+	if err != nil {
+		log.Fatalf("Error creating post: %s", err)
 	}
 
 	response, err := client.App.Bsky.Feed.Post.Create(ctx, post)
