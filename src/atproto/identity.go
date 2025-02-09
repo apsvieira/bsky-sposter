@@ -3,7 +3,6 @@ package atproto
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/bluesky-social/indigo/api/atproto"
 	"github.com/bluesky-social/indigo/xrpc"
@@ -34,7 +33,6 @@ type MockAtprotoIdentityNS struct {
 var _ ComAtprotoIdentityNS = (*MockAtprotoIdentityNS)(nil)
 
 func (c *MockAtprotoIdentityNS) ResolveHandle(ctx context.Context, handle string) (*atproto.IdentityResolveHandle_Output, error) {
-	log.Printf("MockAtprotoIdentityNS.ResolveHandle(%s)", handle)
 	return &atproto.IdentityResolveHandle_Output{
 		Did: fmt.Sprintf("did:fake:%s", handle),
 	}, nil

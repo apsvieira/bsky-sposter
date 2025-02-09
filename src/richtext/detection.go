@@ -1,32 +1,29 @@
 package richtext
 
 import (
-	"log"
+	"fmt"
 	"strings"
 
 	"github.com/bluesky-social/indigo/api/bsky"
 	"golang.org/x/net/publicsuffix"
 )
 
-const handleMatchGroup = 3
-
 func detectFacets(text string) []*bsky.RichtextFacet {
 	var facets []*bsky.RichtextFacet
 
 	// mentions
 	for _, match := range mentionRegex.FindAllStringSubmatchIndex(text, -1) {
-		log.Printf("mention match: %v", match)
-		handle := text[match[handleMatchGroup*2]:match[handleMatchGroup*2+1]]
+		handle := text[match[mentionHandleMatchGroup*2]:match[mentionHandleMatchGroup*2+1]]
 		if !isValidDomain(handle) && !strings.HasSuffix(handle, ".test") {
 			continue
 		}
 
-		start := match[handleMatchGroup*2] - 1
+		start := match[mentionHandleMatchGroup*2] - 1
 
 		facet := &bsky.RichtextFacet{
 			Index: &bsky.RichtextFacet_ByteSlice{
 				ByteStart: int64(start),
-				ByteEnd:   int64(start + len(handle) + 1), // TODO: check
+				ByteEnd:   int64(start + len(handle) + 1),
 			},
 			Features: []*bsky.RichtextFacet_Features_Elem{
 				{
@@ -40,26 +37,37 @@ func detectFacets(text string) []*bsky.RichtextFacet {
 	}
 
 	// links
-	for _, match := range urlRegex.FindAllStringIndex(text, -1) {
-		uri := text[match[0]:match[1]]
-		uri = strings.TrimSpace(uri)
+	for _, match := range urlRegex.FindAllStringSubmatchIndex(text, -1) {
+		uri := text[match[urlUriMatchGroup*2]:match[urlUriMatchGroup*2+1]]
+		matchLength := len(uri)
 		if !strings.HasPrefix(uri, "http") {
-			if !isValidDomain(uri) {
+			var domain string
+			if urlRegex.SubexpIndex(urlDomainCaptureGroupName) != -1 {
+				domain = text[match[urlDomainCaptureGroup*2]:match[urlDomainCaptureGroup*2+1]]
+			}
+			if len(domain) == 0 || !isValidDomain(domain) {
 				continue
 			}
-			uri = "https://" + uri
+
+			uri = fmt.Sprintf("https://%s", uri)
 		}
+
+		start := match[urlUriMatchGroup*2]
+		index := []int{start, start + matchLength}
+		// strip ending punctuation
 		if trailingPunctuationRegex.MatchString(uri) {
 			uri = uri[:len(uri)-1]
+			index[1]--
 		}
 		if strings.HasSuffix(uri, ")") && !strings.Contains(uri, "(") {
 			uri = uri[:len(uri)-1]
+			index[1]--
 		}
 
 		facet := &bsky.RichtextFacet{
 			Index: &bsky.RichtextFacet_ByteSlice{
-				ByteStart: int64(match[0]),
-				ByteEnd:   int64(match[0] + len(uri)), // TODO: check
+				ByteStart: int64(index[0]),
+				ByteEnd:   int64(index[1]),
 			},
 			Features: []*bsky.RichtextFacet_Features_Elem{
 				{
@@ -111,5 +119,6 @@ func isValidDomain(str string) bool {
 	} else if strings.IndexByte(etld, '.') >= 0 { // privately managed
 		validtld = true
 	}
+
 	return validtld
 }

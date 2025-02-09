@@ -2,7 +2,6 @@ package richtext_test
 
 import (
 	"context"
-	"log"
 	"testing"
 
 	"github.com/apsvieira/bsky-sposter/src/atproto"
@@ -16,6 +15,7 @@ type tc struct {
 }
 
 var tcs = []tc{
+	// mentions
 	{"no mention", [][]string{{"no mention"}}},
 	{
 		"@handle.com middle end",
@@ -67,6 +67,80 @@ var tcs = []tc{
 			{")"},
 		},
 	},
+	// links
+	{
+		"start https://middle.com end",
+		[][]string{{"start "}, {"https://middle.com", "https://middle.com"}, {" end"}},
+	},
+	{
+		"start https://middle.com/foo/bar end",
+		[][]string{{"start "}, {"https://middle.com/foo/bar", "https://middle.com/foo/bar"}, {" end"}},
+	},
+	{
+		"start https://middle.com/foo/bar?baz=bux end",
+		[][]string{{"start "}, {"https://middle.com/foo/bar?baz=bux", "https://middle.com/foo/bar?baz=bux"}, {" end"}},
+	},
+	{
+		"start https://middle.com/foo/bar?baz=bux#hash end",
+		[][]string{{"start "}, {"https://middle.com/foo/bar?baz=bux#hash", "https://middle.com/foo/bar?baz=bux#hash"}, {" end"}},
+	},
+	{
+
+		"https://start.com/foo/bar?baz=bux#hash middle end",
+		[][]string{{"https://start.com/foo/bar?baz=bux#hash", "https://start.com/foo/bar?baz=bux#hash"}, {" middle end"}},
+	},
+	{
+		"start middle https://end.com/foo/bar?baz=bux#hash",
+		[][]string{{"start middle "}, {"https://end.com/foo/bar?baz=bux#hash", "https://end.com/foo/bar?baz=bux#hash"}},
+	},
+	{
+		"https://newline1.com\nhttps://newline2.com",
+		[][]string{
+			{"https://newline1.com", "https://newline1.com"},
+			{"\n"},
+			{"https://newline2.com", "https://newline2.com"},
+		},
+	},
+	{
+		"start middle.com end",
+		[][]string{{"start "}, {"middle.com", "https://middle.com"}, {" end"}},
+	},
+	{
+		"start middle.com/foo/bar end",
+		[][]string{{"start "}, {"middle.com/foo/bar", "https://middle.com/foo/bar"}, {" end"}},
+	},
+	{
+		"start middle.com/foo/bar?baz=bux end",
+		[][]string{{"start "}, {"middle.com/foo/bar?baz=bux", "https://middle.com/foo/bar?baz=bux"}, {" end"}},
+	},
+	{
+		"start middle.com/foo/bar?baz=bux#hash end",
+		[][]string{{"start "}, {"middle.com/foo/bar?baz=bux#hash", "https://middle.com/foo/bar?baz=bux#hash"}, {" end"}},
+	},
+	{
+		"start.com/foo/bar?baz=bux#hash middle end",
+		[][]string{{"start.com/foo/bar?baz=bux#hash", "https://start.com/foo/bar?baz=bux#hash"}, {" middle end"}},
+	},
+	{
+		"start middle end.com/foo/bar?baz=bux#hash",
+		[][]string{{"start middle "}, {"end.com/foo/bar?baz=bux#hash", "https://end.com/foo/bar?baz=bux#hash"}},
+	},
+	{
+		"newline1.com\nnewline2.com",
+		[][]string{
+			{"newline1.com", "https://newline1.com"},
+			{"\n"},
+			{"newline2.com", "https://newline2.com"},
+		},
+	},
+	{
+		"a example.com/index.php php link",
+		[][]string{{"a "}, {"example.com/index.php", "https://example.com/index.php"}, {" php link"}},
+	},
+	{
+		"a trailing bsky.app: colon",
+		[][]string{{"a trailing "}, {"bsky.app", "https://bsky.app"}, {": colon"}},
+	},
 }
 
 func TestDetectFacets(t *testing.T) {
@@ -81,16 +155,10 @@ func TestDetectFacets(t *testing.T) {
 			err = rt.DetectFacets(ctx, client)
 			assert.Nil(t, err)
 
-			log.Printf("Input: %s", tc.input)
-			log.Printf("Output: %#v", tc.output)
-			log.Printf("Segments: %#v", rt.Segments())
-
 			for i, s := range rt.Segments() {
-				log.Printf("Segment: %#v", s)
 				output := segmentToOutput(s)
 				assert.Equal(t, tc.output[i], output)
 			}
-			log.Printf("Done")
 
 		})
 	}
