@@ -32,6 +32,26 @@ func NewClient(ctx context.Context, service string, creds *Credentials) (*Client
 	return client, nil
 }
 
+func NewMockClient(ctx context.Context, service string, creds *Credentials) (*Client, error) {
+	xrpcClient := &xrpc.Client{
+		Host: service,
+	}
+	client := &Client{
+		client: xrpcClient,
+		creds:  creds,
+		Com: &ComNS{
+			client: xrpcClient,
+			Atproto: &ComAtprotoNS{
+				client:   xrpcClient,
+				Identity: &MockAtprotoIdentityNS{},
+				Server:   &ComAtprotoServerNS{client: xrpcClient},
+			},
+		},
+		App: NewAppNS(xrpcClient),
+	}
+	return client, nil
+}
+
 // Authenticate creates a new session and authenticates with the handle and appkey.
 func (c *Client) Authenticate(ctx context.Context) error {
 	creds := &atproto.ServerCreateSession_Input{
@@ -58,7 +78,7 @@ func NewComNS(client *xrpc.Client) *ComNS {
 type ComAtprotoNS struct {
 	client *xrpc.Client
 	// Admin ComAtprotoAdminNS
-	Identity *ComAtprotoIdentityNS
+	Identity ComAtprotoIdentityNS
 	// Label *ComAtprotoLabelNS
 	// Lexicon *ComAtprotoLexiconNS
 	// Moderation *ComAtprotoModerationNS

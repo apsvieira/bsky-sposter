@@ -1,35 +1,37 @@
 package richtext
 
 import (
+	"log"
 	"strings"
 
 	"github.com/bluesky-social/indigo/api/bsky"
 	"golang.org/x/net/publicsuffix"
 )
 
+const handleMatchGroup = 3
+
 func detectFacets(text string) []*bsky.RichtextFacet {
 	var facets []*bsky.RichtextFacet
 
 	// mentions
-	for _, match := range mentionRegex.FindAllStringIndex(text, -1) {
-		matchText := text[match[0]:match[1]]
-
-		// this is a bit fancier in the original code
-		start := strings.Index(matchText, "@") + 1
-		mention := matchText[start:]
-		if !isValidDomain(mention) && !strings.HasSuffix(mention, ".test") {
+	for _, match := range mentionRegex.FindAllStringSubmatchIndex(text, -1) {
+		log.Printf("mention match: %v", match)
+		handle := text[match[handleMatchGroup*2]:match[handleMatchGroup*2+1]]
+		if !isValidDomain(handle) && !strings.HasSuffix(handle, ".test") {
 			continue
 		}
+
+		start := match[handleMatchGroup*2] - 1
 
 		facet := &bsky.RichtextFacet{
 			Index: &bsky.RichtextFacet_ByteSlice{
 				ByteStart: int64(start),
-				ByteEnd:   int64(match[1]),
+				ByteEnd:   int64(start + len(handle) + 1), // TODO: check
 			},
 			Features: []*bsky.RichtextFacet_Features_Elem{
 				{
 					RichtextFacet_Mention: &bsky.RichtextFacet_Mention{
-						Did: mention,
+						Did: handle,
 					},
 				},
 			},
@@ -57,7 +59,7 @@ func detectFacets(text string) []*bsky.RichtextFacet {
 		facet := &bsky.RichtextFacet{
 			Index: &bsky.RichtextFacet_ByteSlice{
 				ByteStart: int64(match[0]),
-				ByteEnd:   int64(match[0] + len(uri) - 1), // TODO: check
+				ByteEnd:   int64(match[0] + len(uri)), // TODO: check
 			},
 			Features: []*bsky.RichtextFacet_Features_Elem{
 				{

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"sort"
+	"strings"
 
 	"github.com/apsvieira/bsky-sposter/src/atproto"
 	"github.com/bluesky-social/indigo/api/bsky"
@@ -19,16 +20,16 @@ type RichTextOpts struct {
 }
 
 type RichTextSegment struct {
-	text  string
-	facet *bsky.RichtextFacet
+	Text  string
+	Facet *bsky.RichtextFacet
 }
 
 func NewRichTextSegment(text string, facet *bsky.RichtextFacet) *RichTextSegment {
-	return &RichTextSegment{text: text, facet: facet}
+	return &RichTextSegment{Text: text, Facet: facet}
 }
 
 func (s *RichTextSegment) Link() *bsky.RichtextFacet_Link {
-	for _, f := range s.facet.Features {
+	for _, f := range s.Facet.Features {
 		if f.RichtextFacet_Link != nil {
 			return f.RichtextFacet_Link
 		}
@@ -37,7 +38,7 @@ func (s *RichTextSegment) Link() *bsky.RichtextFacet_Link {
 }
 
 func (s *RichTextSegment) Mention() *bsky.RichtextFacet_Mention {
-	for _, f := range s.facet.Features {
+	for _, f := range s.Facet.Features {
 		if f.RichtextFacet_Mention != nil {
 			return f.RichtextFacet_Mention
 		}
@@ -46,7 +47,7 @@ func (s *RichTextSegment) Mention() *bsky.RichtextFacet_Mention {
 }
 
 func (s *RichTextSegment) Tag() *bsky.RichtextFacet_Tag {
-	for _, f := range s.facet.Features {
+	for _, f := range s.Facet.Features {
 		if f.RichtextFacet_Tag != nil {
 			return f.RichtextFacet_Tag
 		}
@@ -58,12 +59,6 @@ type RichText struct {
 	unicodeText string
 	facets      []*bsky.RichtextFacet
 }
-
-type ByIndexByteStart []*bsky.RichtextFacet
-
-func (a ByIndexByteStart) Len() int           { return len(a) }
-func (a ByIndexByteStart) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByIndexByteStart) Less(i, j int) bool { return a[i].Index.ByteStart < a[j].Index.ByteStart }
 
 func NewRichText(text string) *RichText {
 	return NewRichTextFromProps(RichTextProps{text: text}, &RichTextOpts{})
@@ -109,11 +104,40 @@ func (rt *RichText) GraphemeLength() int {
 
 // Segments returns the text segments with their respective facets
 func (rt *RichText) Segments() []*RichTextSegment {
-	segments := make([]*RichTextSegment, 0, len(rt.facets))
-	for _, f := range rt.facets {
-		text := rt.unicodeText[f.Index.ByteStart:f.Index.ByteEnd]
-		segments = append(segments, NewRichTextSegment(text, f))
+	facets := rt.facets
+	if len(facets) == 0 {
+		return []*RichTextSegment{NewRichTextSegment(rt.unicodeText, nil)}
 	}
+
+	segments := make([]*RichTextSegment, 0, len(facets)+1)
+	textCursor := 0
+	facetCursor := 0
+	for facetCursor < len(facets) {
+		currFacet := facets[facetCursor]
+		if textCursor < int(currFacet.Index.ByteStart) {
+			segments = append(segments, NewRichTextSegment(rt.unicodeText[textCursor:int(currFacet.Index.ByteStart)], nil))
+		} else if textCursor > int(currFacet.Index.ByteStart) {
+			facetCursor++
+			continue
+		}
+
+		if currFacet.Index.ByteStart < currFacet.Index.ByteEnd {
+			subtext := rt.unicodeText[currFacet.Index.ByteStart:currFacet.Index.ByteEnd]
+			if len(strings.TrimSpace(subtext)) == 0 {
+				segments = append(segments, NewRichTextSegment(subtext, nil))
+			} else {
+				segments = append(segments, NewRichTextSegment(subtext, currFacet))
+			}
+		}
+
+		textCursor = int(currFacet.Index.ByteEnd)
+		facetCursor++
+	}
+
+	if textCursor < len(rt.unicodeText) {
+		segments = append(segments, NewRichTextSegment(rt.unicodeText[textCursor:], nil))
+	}
+
 	return segments
 }
 
@@ -140,5 +164,12 @@ func (rt *RichText) DetectFacets(ctx context.Context, agent *atproto.Client) err
 		}
 	}
 	rt.facets = facets
+	sort.Sort(ByIndexByteStart(rt.facets))
 	return nil
 }
+
+type ByIndexByteStart []*bsky.RichtextFacet
+
+func (a ByIndexByteStart) Len() int           { return len(a) }
+func (a ByIndexByteStart) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByIndexByteStart) Less(i, j int) bool { return a[i].Index.ByteStart < a[j].Index.ByteStart }
