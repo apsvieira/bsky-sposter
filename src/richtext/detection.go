@@ -13,12 +13,12 @@ func detectFacets(text string) []*bsky.RichtextFacet {
 
 	// mentions
 	for _, match := range mentionRegex.FindAllStringSubmatchIndex(text, -1) {
-		handle := text[match[mentionHandleMatchGroup*2]:match[mentionHandleMatchGroup*2+1]]
+		handle := text[match[MENTION_HANDLER_MATCH_GROUP*2]:match[MENTION_HANDLER_MATCH_GROUP*2+1]]
 		if !isValidDomain(handle) && !strings.HasSuffix(handle, ".test") {
 			continue
 		}
 
-		start := match[mentionHandleMatchGroup*2] - 1
+		start := match[MENTION_HANDLER_MATCH_GROUP*2] - 1
 
 		facet := &bsky.RichtextFacet{
 			Index: &bsky.RichtextFacet_ByteSlice{
@@ -38,12 +38,12 @@ func detectFacets(text string) []*bsky.RichtextFacet {
 
 	// links
 	for _, match := range urlRegex.FindAllStringSubmatchIndex(text, -1) {
-		uri := text[match[urlUriMatchGroup*2]:match[urlUriMatchGroup*2+1]]
+		uri := text[match[URL_URI_MATCH_GROUP*2]:match[URL_URI_MATCH_GROUP*2+1]]
 		matchLength := len(uri)
 		if !strings.HasPrefix(uri, "http") {
 			var domain string
-			if urlRegex.SubexpIndex(urlDomainCaptureGroupName) != -1 {
-				domain = text[match[urlDomainCaptureGroup*2]:match[urlDomainCaptureGroup*2+1]]
+			if urlRegex.SubexpIndex(URL_DOMAIN_CAPTURE_GROUP_NAME) != -1 {
+				domain = text[match[URL_DOMAIN_CAPTURE_GROUP*2]:match[URL_DOMAIN_CAPTURE_GROUP*2+1]]
 			}
 			if len(domain) == 0 || !isValidDomain(domain) {
 				continue
@@ -52,10 +52,10 @@ func detectFacets(text string) []*bsky.RichtextFacet {
 			uri = fmt.Sprintf("https://%s", uri)
 		}
 
-		start := match[urlUriMatchGroup*2]
+		start := match[URL_URI_MATCH_GROUP*2]
 		index := []int{start, start + matchLength}
 		// strip ending punctuation
-		if trailingPunctuationRegex.MatchString(uri) {
+		if trailingPunctuationInUrlRegex.MatchString(uri) {
 			uri = uri[:len(uri)-1]
 			index[1]--
 		}
@@ -82,31 +82,6 @@ func detectFacets(text string) []*bsky.RichtextFacet {
 
 	// TODO: not handling tags as they depend on boring regexes
 	// that I can't be bothered to translate to Go
-	//
-	// for _, match := range tagRegex.FindAllStringIndex(text, -1) {
-	// 	tag := text[match[0]:match[1]]
-	// 	tag = strings.TrimSpace(tag)
-	// 	tag = trailingPunctuationRegex.ReplaceAllString(tag, "")
-
-	// 	if len(tag) == 0 || len(tag) > 100 {
-	// 		continue
-	// 	}
-
-	// 	facet := &bsky.RichtextFacet{
-	// 		Index: &bsky.RichtextFacet_ByteSlice{
-	// 			ByteStart: int64(match[0]),
-	// 			ByteEnd:   int64(match[0] + len(tag) - 1), // TODO: check
-	// 		},
-	// 		Features: []*bsky.RichtextFacet_Features_Elem{
-	// 			{
-	// 				RichtextFacet_Tag: &bsky.RichtextFacet_Tag{
-	// 					Tag: tag,
-	// 				},
-	// 			},
-	// 		},
-	// 	}
-	// 	facets = append(facets, facet)
-	// }
 
 	return facets
 }

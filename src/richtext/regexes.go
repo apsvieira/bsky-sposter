@@ -3,21 +3,21 @@ package richtext
 import "regexp"
 
 const (
-	MENTION_REGEX_STR              = `(^|\s|\()(@)([a-zA-Z0-9.-]+)(\b)`
-	URL_REGEX_STR                  = `(?i)(^|\s|\()((https?:\/\/[\S]+)|((?P<domain>[a-z][a-z0-9]*(\.[a-z0-9]+)+)[\S]*))`
-	TRAILING_PUNCTUATION_REGEX_STR = `\pP+$`
-	// TAG_REGEX_STR                  = `(^|\s)[#＃]([^\s\u00AD\u2060\u200A\u200B\u200C\u200D\u20e2]*[^\d\s\pP\u00AD\u2060\u200A\u200B\u200C\u200D\u20e2]+[^\s\u00AD\u2060\u200A\u200B\u200C\u200D\u20e2]*)?`
+	MENTION_REGEX_STR                     = `(^|\s|\()(@)([a-zA-Z0-9.-]+)(\b)`
+	URL_REGEX_STR                         = `(?i)(^|\s|\()((https?:\/\/[\S]+)|((?P<domain>[a-z][a-z0-9]*(\.[a-z0-9]+)+)[\S]*))`
+	TRAILING_PUNCTUATION_REGEX_STR        = `\pP+$`
+	TRAILING_PUNCTUATION_IN_URL_REGEX_STR = `[.,;:!?]$`
 
 	// Index of the relevant match groups within the regex
-	mentionHandleMatchGroup   = 3
-	urlUriMatchGroup          = 2
-	urlDomainCaptureGroup     = 5
-	urlDomainCaptureGroupName = "domain"
+	MENTION_HANDLER_MATCH_GROUP   = 3
+	URL_URI_MATCH_GROUP           = 2
+	URL_DOMAIN_CAPTURE_GROUP      = 5
+	URL_DOMAIN_CAPTURE_GROUP_NAME = "domain"
 )
 
 var (
-	mentionRegex             = regexp.MustCompile(MENTION_REGEX_STR)
-	urlRegex                 = regexp.MustCompile(URL_REGEX_STR)
-	trailingPunctuationRegex = regexp.MustCompile(TRAILING_PUNCTUATION_REGEX_STR)
-	// tagRegex                 = regexp.MustCompile(TAG_REGEX_STR)
+	mentionRegex                  = regexp.MustCompile(MENTION_REGEX_STR)
+	urlRegex                      = regexp.MustCompile(URL_REGEX_STR)
+	trailingPunctuationRegex      = regexp.MustCompile(TRAILING_PUNCTUATION_REGEX_STR)
+	trailingPunctuationInUrlRegex = regexp.MustCompile(TRAILING_PUNCTUATION_IN_URL_REGEX_STR)
 )

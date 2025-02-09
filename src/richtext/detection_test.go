@@ -141,6 +141,59 @@ var tcs = []tc{
 		"a trailing bsky.app: colon",
 		[][]string{{"a trailing "}, {"bsky.app", "https://bsky.app"}, {": colon"}},
 	},
+	// crappy links
+	{
+		"not.. a..url ..here",
+		[][]string{{"not.. a..url ..here"}},
+	},
+	{
+		"e.g.",
+		[][]string{{"e.g."}},
+	},
+	{
+		"something-cool.jpg",
+		[][]string{{"something-cool.jpg"}},
+	},
+	{
+		"website.com.jpg",
+		[][]string{{"website.com.jpg"}},
+	},
+	{
+		"e.g./foo",
+		[][]string{{"e.g./foo"}},
+	},
+	{
+		"website.com.jpg/foo",
+		[][]string{{"website.com.jpg/foo"}},
+	},
+	// more complex links
+	{
+		"Classic article https://socket3.wordpress.com/2018/02/03/designing-windows-95s-user-interface/",
+		[][]string{
+			{"Classic article "},
+			{"https://socket3.wordpress.com/2018/02/03/designing-windows-95s-user-interface/", "https://socket3.wordpress.com/2018/02/03/designing-windows-95s-user-interface/"},
+		},
+	},
+	{
+		"Classic article https://socket3.wordpress.com/2018/02/03/designing-windows-95s-user-interface/ ",
+		[][]string{{"Classic article "}, {"https://socket3.wordpress.com/2018/02/03/designing-windows-95s-user-interface/", "https://socket3.wordpress.com/2018/02/03/designing-windows-95s-user-interface/"}, {" "}},
+	},
+	{
+		"https://foo.com https://bar.com/whatever https://baz.com",
+		[][]string{{"https://foo.com", "https://foo.com"}, {" "}, {"https://bar.com/whatever", "https://bar.com/whatever"}, {" "}, {"https://baz.com", "https://baz.com"}},
+	},
+	{
+		"punctuation https://foo.com, https://bar.com/whatever; https://baz.com.",
+		[][]string{{"punctuation "}, {"https://foo.com", "https://foo.com"}, {", "}, {"https://bar.com/whatever", "https://bar.com/whatever"}, {"; "}, {"https://baz.com", "https://baz.com"}, {"."}},
+	},
+	{
+		"parenthentical (https://foo.com)",
+		[][]string{{"parenthentical ("}, {"https://foo.com", "https://foo.com"}, {")"}},
+	},
+	{
+		"except for https://foo.com/thing_(cool)",
+		[][]string{{"except for "}, {"https://foo.com/thing_(cool)", "https://foo.com/thing_(cool)"}},
+	},
 }
 
 func TestDetectFacets(t *testing.T) {
