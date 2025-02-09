@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/apsvieira/bsky-sposter/src/atproto"
+	"github.com/apsvieira/bsky-sposter/src/atproto/mock"
 	"github.com/apsvieira/bsky-sposter/src/atproto/richtext"
 	"github.com/stretchr/testify/assert"
 )
@@ -202,7 +202,7 @@ func TestDetectFacets(t *testing.T) {
 			tc := tc
 			ctx := context.Background()
 			rt := richtext.NewRichText(tc.input)
-			client, err := atproto.NewMockClient(ctx, "https://test.url", &atproto.Credentials{})
+			client, err := mock.NewClient(ctx, "https://test.url")
 			assert.Nil(t, err)
 
 			err = rt.DetectFacets(ctx, client)

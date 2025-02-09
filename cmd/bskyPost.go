@@ -5,17 +5,17 @@ import (
 	"log"
 
 	sposter "github.com/apsvieira/bsky-sposter/src"
-	atproto "github.com/apsvieira/bsky-sposter/src/atproto"
+	"github.com/apsvieira/bsky-sposter/src/atproto/client"
 )
 
 func main() {
 	ctx := context.Background()
-	creds, err := atproto.GetCredentials()
+	creds, err := client.GetCredentials()
 	if err != nil {
 		log.Fatalf("Error getting credentials: %s", err)
 	}
 
-	client, err := atproto.NewClient(ctx, "https://bsky.social", creds)
+	client, err := client.NewClient(ctx, "https://bsky.social", creds)
 	if err != nil {
 		log.Fatalf("Error authenticating: %s", err)
 	}
@@ -26,9 +26,9 @@ func main() {
 		log.Fatalf("Error creating post: %s", err)
 	}
 
-	response, err := client.App.Bsky.Feed.Post.Create(ctx, post)
+	bskyPost, err := client.CreatePost(ctx, post)
 	if err != nil {
 		log.Fatalf("Error posting: %s", err)
 	}
-	log.Printf("Posted: %s", response.Uri)
+	log.Printf("Posted: %s", bskyPost.Uri)
 }

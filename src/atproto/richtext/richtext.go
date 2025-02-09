@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/apsvieira/bsky-sposter/src/atproto"
+	"github.com/apsvieira/bsky-sposter/src/atproto/interfaces"
 	"github.com/bluesky-social/indigo/api/bsky"
 )
 
@@ -143,7 +143,7 @@ func (rt *RichText) Segments() []*RichTextSegment {
 
 // DetectFacets detects facets such as links and mentions in the text.
 // Note: Overwrites the existing facets with auto-detected facets.
-func (rt *RichText) DetectFacets(ctx context.Context, agent *atproto.Client) error {
+func (rt *RichText) DetectFacets(ctx context.Context, agent interfaces.AtpBaseClient) error {
 	facets := detectFacets(rt.unicodeText)
 	if len(facets) == 0 {
 		return nil
@@ -155,7 +155,7 @@ func (rt *RichText) DetectFacets(ctx context.Context, agent *atproto.Client) err
 				continue
 			}
 
-			data, err := agent.Com.Atproto.Identity.ResolveHandle(ctx, feature.RichtextFacet_Mention.Did)
+			data, err := agent.Com().Atproto().Identity().ResolveHandle(ctx, feature.RichtextFacet_Mention.Did)
 			if err != nil {
 				log.Printf("Error resolving handle %s: %s", feature.RichtextFacet_Mention.Did, err)
 				continue
