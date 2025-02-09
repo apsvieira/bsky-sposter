@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/apsvieira/bsky-sposter/src/atproto"
-	"github.com/apsvieira/bsky-sposter/src/richtext"
+	"github.com/apsvieira/bsky-sposter/src/atproto/richtext"
 	"github.com/stretchr/testify/assert"
 )
 
